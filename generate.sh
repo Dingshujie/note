@@ -17,11 +17,12 @@ done
 
 # 获取所有符合条件的环境变量
 log_vars=()
-for var in $(env | cut -d= -f1); do
-    if [[ $var == ucp_logs_* ]] && [[ $var != *_tags ]]; then
-        log_vars+=("$var")
+while IFS= read -r line; do
+    name="${line%%=*}"
+    if [[ $name == ucp_logs_* ]] && [[ $name != *_tags ]]; then
+        log_vars+=("$name")
     fi
-done
+done < <(env)
 
 # 调试信息
 echo "找到的环境变量:"
@@ -34,15 +35,20 @@ done
 
 # 处理每个日志变量
 for var_name in "${log_vars[@]}"; do
-    # 获取日志路径（使用eval安全获取值）
-    log_path=$(eval echo \$$var_name)
+    # 获取日志路径
+    log_path=$(env | grep "^$var_name=" | cut -d= -f2-)
     
     # 获取索引名称（去掉ucp_logs_前缀）
     index_name="${var_name#ucp_logs_}"
     
     # 获取对应的tags变量
     tags_var="${var_name}_tags"
-    tags_value=$(eval echo \$$tags_var)
+    tags_value=$(env | grep "^$tags_var=" | cut -d= -f2-)
+    
+    # 调试信息
+    echo "处理变量: $var_name"
+    echo "日志路径: $log_path"
+    echo "标签值: $tags_value"
     
     # 创建新的日志收集器配置
     collector_config="- type: log
