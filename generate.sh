@@ -16,20 +16,22 @@ for var in "${required_vars[@]}"; do
 done
 
 # 获取所有符合条件的环境变量
-# 首先获取所有以ucp_logs_开头的变量
-log_vars=$(env | grep '^ucp_logs_' | cut -d= -f1)
-# 然后过滤掉以_tags结尾的变量
-log_vars=$(echo "$log_vars" | grep -v '_tags$')
+log_vars=()
+while IFS='=' read -r name value; do
+    if [[ $name == ucp_logs_* ]] && [[ $name != *_tags ]]; then
+        log_vars+=("$name")
+    fi
+done < <(env)
 
 # 调试信息
 echo "找到的环境变量:"
-echo "$log_vars"
+printf '%s\n' "${log_vars[@]}"
 
 # 计数器用于跟踪日志收集器
 collector_count=0
 
 # 处理每个日志变量
-for var_name in $log_vars; do
+for var_name in "${log_vars[@]}"; do
     # 获取日志路径
     log_path="${!var_name}"
     
