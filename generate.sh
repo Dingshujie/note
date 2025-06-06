@@ -29,8 +29,8 @@ for var in "${log_vars[@]}"; do
     echo "$var"
 done
 
-# 计数器用于跟踪日志收集器
-collector_count=0
+# 清空输出文件
+> "$OUTPUT_YAML"
 
 # 处理每个日志变量
 for var_name in "${log_vars[@]}"; do
@@ -81,22 +81,20 @@ for var_name in "${log_vars[@]}"; do
   multiline.negate: true
   multiline.match: after"
 
-    # 如果是第一个收集器，创建新文件
-    if [ $collector_count -eq 0 ]; then
-        echo "$collector_config" > "$OUTPUT_YAML"
-    else
-        # 否则追加到文件末尾
+    # 追加到文件末尾
+    if [ -s "$OUTPUT_YAML" ]; then
+        # 如果文件不为空，添加换行符
         echo -e "\n$collector_config" >> "$OUTPUT_YAML"
+    else
+        # 如果文件为空，直接写入
+        echo "$collector_config" >> "$OUTPUT_YAML"
     fi
-
-    ((collector_count++))
 done
 
 # 检查是否生成了任何配置
-if [ $collector_count -eq 0 ]; then
+if [ ! -s "$OUTPUT_YAML" ]; then
     echo "警告: 没有找到符合条件的环境变量，未生成配置文件"
     exit 1
 fi
 
 echo "配置文件已生成: $OUTPUT_YAML" 
-
