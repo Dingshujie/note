@@ -17,30 +17,32 @@ done
 
 # 获取所有符合条件的环境变量
 log_vars=()
-while IFS='=' read -r name value; do
-    if [[ $name == ucp_logs_* ]] && [[ $name != *_tags ]]; then
-        log_vars+=("$name")
+for var in $(env | cut -d= -f1); do
+    if [[ $var == ucp_logs_* ]] && [[ $var != *_tags ]]; then
+        log_vars+=("$var")
     fi
-done < <(env)
+done
 
 # 调试信息
 echo "找到的环境变量:"
-printf '%s\n' "${log_vars[@]}"
+for var in "${log_vars[@]}"; do
+    echo "$var"
+done
 
 # 计数器用于跟踪日志收集器
 collector_count=0
 
 # 处理每个日志变量
 for var_name in "${log_vars[@]}"; do
-    # 获取日志路径
-    log_path="${!var_name}"
+    # 获取日志路径（使用eval安全获取值）
+    log_path=$(eval echo \$$var_name)
     
     # 获取索引名称（去掉ucp_logs_前缀）
     index_name="${var_name#ucp_logs_}"
     
     # 获取对应的tags变量
     tags_var="${var_name}_tags"
-    tags_value="${!tags_var}"
+    tags_value=$(eval echo \$$tags_var)
     
     # 创建新的日志收集器配置
     collector_config="- type: log
@@ -97,3 +99,4 @@ if [ $collector_count -eq 0 ]; then
 fi
 
 echo "配置文件已生成: $OUTPUT_YAML" 
+
